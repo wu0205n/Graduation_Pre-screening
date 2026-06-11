@@ -234,7 +234,7 @@
                 </div>
                 <div class="form-group">
                     <label for="courseCredits">學分數</label>
-                    <input type="number" id="courseCredits" class="form-control" min="1" max="10" placeholder="請輸入學分數">
+                    <input type="number" id="courseCredits" class="form-control" min="0" max="10" placeholder="請輸入學分數 (可輸入 0)">
                 </div>
                 <div class="form-group">
                     <label for="courseType">課程性質分類</label>
@@ -430,8 +430,9 @@
             alert('請輸入課程名稱！');
             return;
         }
-        if (isNaN(credits) || credits <= 0) {
-            alert('請輸入正確的學分數！');
+        // 將判斷條件改為小於 0，允許 0 學分
+        if (isNaN(credits) || credits < 0) {
+            alert('請輸入正確的學分數 (0 或正整數)！');
             return;
         }
 
