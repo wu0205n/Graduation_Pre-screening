@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>畢業預審</title>
+    <title>健行科技大學 資訊管理系 - 畢業學分預審系統</title>
     <style>
         :root {
             --bg-color: #121212;
@@ -223,7 +223,9 @@
     </header>
 
     <div class="grid">
+        <!-- Left Column: Input and Progress -->
         <div>
+            <!-- Course Input Card -->
             <div class="card">
                 <h2>新增課程資料</h2>
                 <div class="form-group">
@@ -251,9 +253,11 @@
                 <button type="button" id="addBtn" class="btn-primary" onclick="addCourse()">加入預審清單</button>
             </div>
 
+            <!-- Progress Card -->
             <div class="card">
                 <h2>學分達標進度條</h2>
                 
+                <!-- Total Credits -->
                 <div class="progress-wrapper">
                     <div class="progress-info">
                         <strong>累計總學分 (門檻: 128)</strong>
@@ -264,6 +268,7 @@
                     </div>
                 </div>
 
+                <!-- Common Required -->
                 <div class="progress-wrapper">
                     <div class="progress-info">
                         <span>共同必修 (門檻: 12)</span>
@@ -272,6 +277,7 @@
                     <div class="progress-bar-container">
                         <div id="bar-common" class="progress-bar"></div>
                     </div>
+                    <!-- Sub: Language -->
                     <div class="sub-progress">
                         <div class="progress-info" style="font-size: 12px;">
                             <span>其中外語課程 (門檻: 8)</span>
@@ -283,6 +289,7 @@
                     </div>
                 </div>
 
+                <!-- General Education -->
                 <div class="progress-wrapper">
                     <div class="progress-info">
                         <span>通識課程 (門檻: 16)</span>
@@ -292,6 +299,7 @@
                         <div id="bar-ge" class="progress-bar"></div>
                     </div>
                     
+                    <!-- 4 Subfields -->
                     <div class="sub-progress">
                         <div class="progress-info" style="font-size: 12px;">
                             <span>經典與當代社會 (門檻: 4)</span>
@@ -319,6 +327,7 @@
                     </div>
                 </div>
 
+                <!-- College Required -->
                 <div class="progress-wrapper">
                     <div class="progress-info">
                         <span>院必修 (門檻: 4)</span>
@@ -329,6 +338,7 @@
                     </div>
                 </div>
 
+                <!-- Department Required -->
                 <div class="progress-wrapper">
                     <div class="progress-info">
                         <span>專業必修 (門檻: 52)</span>
@@ -339,6 +349,7 @@
                     </div>
                 </div>
 
+                <!-- Department Elective -->
                 <div class="progress-wrapper">
                     <div class="progress-info">
                         <span>專業選修 (門檻: 44)</span>
@@ -352,6 +363,7 @@
             </div>
         </div>
 
+        <!-- Right Column: Course List Table -->
         <div>
             <div class="card" style="min-height: 500px;">
                 <h2>已輸入課程清單</h2>
@@ -366,7 +378,8 @@
                             </tr>
                         </thead>
                         <tbody id="courseTableBody">
-                            </tbody>
+                            <!-- Dynamic Content -->
+                        </tbody>
                     </table>
                     <div id="emptyMessage" class="empty-message">
                         目前尚未新增任何課程。
@@ -391,8 +404,18 @@
         'dept_elective': '專業選修'
     };
 
-    // Global Course State
-    let courses = [];
+    // Global Course State (讀取 LocalStorage 或預設空陣列)
+    let courses = JSON.parse(localStorage.getItem('graduation_courses')) || [];
+
+    // 網頁載入時立即更新畫面
+    window.onload = function() {
+        updateUI();
+    };
+
+    // 將資料儲存至瀏覽器本地端
+    function saveCourses() {
+        localStorage.setItem('graduation_courses', JSON.stringify(courses));
+    }
 
     function addCourse() {
         const nameInput = document.getElementById('courseName');
@@ -414,6 +437,9 @@
 
         // Add to array
         courses.push({ id: Date.now(), name, credits, type });
+        
+        // 儲存資料
+        saveCourses();
 
         // Clear input form fields (except dropdown select)
         nameInput.value = '';
@@ -425,6 +451,10 @@
 
     function deleteCourse(id) {
         courses = courses.filter(course => course.id !== id);
+        
+        // 更新儲存的資料
+        saveCourses();
+        
         updateUI();
     }
 
