@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>健行科技大學 資訊管理系 - 畢業學分預審系統</title>
+    <style>
+        :root {
+            --bg-color: #121212;
+            --card-bg: #1e1e1e;
+            --text-color: #e0e0e0;
+            --text-muted: #a0a0a0;
+            --border-color: #333333;
+            --primary: #bb86fc;
+            --primary-variant: #3700b3;
+            --secondary: #03dac6;
+            --danger: #cf6679;
+            --success: #4caf50;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'PingFang TC', 'Microsoft JhengHei', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        header h1 {
+            color: var(--primary);
+            font-size: 24px;
+            margin-bottom: 5px;
+        }
+
+        header p {
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+
+        .grid {
+            display: block;
+        }
+
+        @media (min-width: 768px) {
+            .grid {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 20px;
+            }
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border: 1px solid var(--border-color);
+        }
+
+        .card h2 {
+            font-size: 18px;
+            color: var(--secondary);
+            margin-bottom: 15px;
+            border-left: 4px solid var(--secondary);
+            padding-left: 10px;
+        }
+
+        /* Form Controls */
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 10px;
+            background-color: #2a2a2a;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            color: var(--text-color);
+            font-size: 14px;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        btn {
+            display: block;
+            width: 100%;
+            padding: 12px;
+            background-color: var(--primary);
+            color: #121212;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        btn:hover {
+            background-color: #d7b4ff;
+        }
+
+        /* Progress Bars */
+        .progress-wrapper {
+            margin-bottom: 15px;
+        }
+
+        .progress-info {
+            display: flex;
+            justify-content: space-between;
+            font-size: 14px;
+            margin-bottom: 5px;
+        }
+
+        .progress-bar-container {
+            background-color: #333333;
+            height: 12px;
+            border-radius: 6px;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            background-color: var(--primary);
+            height: 100%;
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .progress-bar.total {
+            background-color: var(--secondary);
+        }
+
+        .sub-progress {
+            padding-left: 15px;
+            margin-top: 5px;
+            border-left: 2px dashed #444;
+        }
+
+        /* Table Styles */
+        .table-responsive {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+            font-size: 14px;
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        th {
+            background-color: #252525;
+            color: var(--secondary);
+        }
+
+        tr:hover {
+            background-color: #252525;
+        }
+
+        .btn-delete {
+            background-color: transparent;
+            color: var(--danger);
+            border: 1px solid var(--danger);
+            padding: 5px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.2s;
+        }
+
+        .btn-delete:hover {
+            background-color: var(--danger);
+            color: #ffffff;
+        }
+
+        .empty-message {
+            text-align: center;
+            color: var(--text-muted);
+            padding: 20px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>健行科技大學 資訊管理系</h1>
+        <p>畢業學分預審系統（總畢業門檻：128 學分）</p>
+    </header>
+
+    <div class="grid">
+        <!-- Left Column: Input and Progress -->
+        <div>
+            <!-- Course Input Card -->
+            <div class="card">
+                <h2>新增課程資料</h2>
+                <div class="form-group">
+                    <label for="courseName">課程名稱</label>
+                    <input type="text" id="courseName" class="form-control" placeholder="請輸入課程名稱，例如：資料庫管理系統">
+                </div>
+                <div class="form-group">
+                    <label for="courseCredits">學分數</label>
+                    <input type="number" id="courseCredits" class="form-control" min="1" max="10" placeholder="請輸入學分數">
+                </div>
+                <div class="form-group">
+                    <label for="courseType">課程性質分類</label>
+                    <select id="courseType" class="form-control">
+                        <option value="common_other">共同必修 (非外語)</option>
+                        <option value="common_lang">共同必修 (外語)</option>
+                        <option value="ge_classic">通識課程 (經典與當代社會)</option>
+                        <option value="ge_life">通識課程 (生命與社會關懷)</option>
+                        <option value="ge_history">通識課程 (歷史文明與藝術)</option>
+                        <option value="ge_tech">通識課程 (科學技術與社會)</option>
+                        <option value="college_req">院必修</option>
+                        <option value="dept_req">專業必修</option>
+                        <option value="dept_elective">專業選修</option>
+                    </select>
+                </div>
+                <button type="button" id="addBtn" onclick="addCourse()" style="display: block; width: 100%; padding: 12px; background-color: var(--primary); color: #121212; border: none; border-radius: 4px; font-size: 16px; font-weight: bold; cursor: pointer;">加入預審清單</button>
+            </div>
+
+            <!-- Progress Card -->
+            <div class="card">
+                <h2>學分達標進度條</h2>
+                
+                <!-- Total Credits -->
+                <div class="progress-wrapper">
+                    <div class="progress-info">
+                        <strong>累計總學分 (門檻: 128)</strong>
+                        <span id="txt-total">0 / 128 學分</span>
+                    </div>
+                    <div class="progress-bar-container">
+                        <div id="bar-total" class="progress-bar total"></div>
+                    </div>
+                </div>
+
+                <!-- Common Required -->
+                <div class="progress-wrapper">
+                    <div class="progress-info">
+                        <span>共同必修 (門檻: 12)</span>
+                        <span id="txt-common">0 / 12 學分</span>
+                    </div>
+                    <div class="progress-bar-container">
+                        <div id="bar-common" class="progress-bar"></div>
+                    </div>
+                    <!-- Sub: Language -->
+                    <div class="sub-progress">
+                        <div class="progress-info" style="font-size: 12px;">
+                            <span>其中外語課程 (門檻: 8)</span>
+                            <span id="txt-common-lang">0 / 8 學分</span>
+                        </div>
+                        <div class="progress-bar-container" style="height: 8px;">
+                            <div id="bar-common-lang" class="progress-bar" style="background-color: #81c784;"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- General Education -->
+                <div class="progress-wrapper">
+                    <div class="progress-info">
+                        <span>通識課程 (門檻: 16)</span>
+                        <span id="txt-ge">0 / 16 學分</span>
+                    </div>
+                    <div class="progress-bar-container">
+                        <div id="bar-ge" class="progress-bar"></div>
+                    </div>
+                    
+                    <!-- 4 Subfields -->
+                    <div class="sub-progress">
+                        <div class="progress-info" style="font-size: 12px;">
+                            <span>經典與當代社會 (門檻: 4)</span>
+                            <span id="txt-ge-classic">0 / 4 學分</span>
+                        </div>
+                        <div class="progress-bar-container" style="height: 6px;"><div id="bar-ge-classic" class="progress-bar"></div></div>
+                        
+                        <div class="progress-info" style="font-size: 12px; margin-top: 5px;">
+                            <span>生命與社會關懷 (門檻: 4)</span>
+                            <span id="txt-ge-life">0 / 4 學分</span>
+                        </div>
+                        <div class="progress-bar-container" style="height: 6px;"><div id="bar-ge-life" class="progress-bar"></div></div>
+
+                        <div class="progress-info" style="font-size: 12px; margin-top: 5px;">
+                            <span>歷史文明與藝術 (門檻: 4)</span>
+                            <span id="txt-ge-history">0 / 4 學分</span>
+                        </div>
+                        <div class="progress-bar-container" style="height: 6px;"><div id="bar-ge-history" class="progress-bar"></div></div>
+
+                        <div class="progress-info" style="font-size: 12px; margin-top: 5px;">
+                            <span>科學技術與社會 (門檻: 4)</span>
+                            <span id="txt-ge-tech">0 / 4 學分</span>
+                        </div>
+                        <div class="progress-bar-container" style="height: 6px;"><div id="bar-ge-tech" class="progress-bar"></div></div>
+                    </div>
+                </div>
+
+                <!-- College Required -->
+                <div class="progress-wrapper">
+                    <div class="progress-info">
+                        <span>院必修 (門檻: 4)</span>
+                        <span id="txt-college">0 / 4 學分</span>
+                    </div>
+                    <div class="progress-bar-container">
+                        <div id="bar-college" class="progress-bar"></div>
+                    </div>
+                </div>
+
+                <!-- Department Required -->
+                <div class="progress-wrapper">
+                    <div class="progress-info">
+                        <span>專業必修 (門檻: 52)</span>
+                        <span id="txt-dept-req">0 / 52 學分</span>
+                    </div>
+                    <div class="progress-bar-container">
+                        <div id="bar-dept-req" class="progress-bar"></div>
+                    </div>
+                </div>
+
+                <!-- Department Elective -->
+                <div class="progress-wrapper">
+                    <div class="progress-info">
+                        <span>專業選修 (門檻: 44)</span>
+                        <span id="txt-dept-elective">0 / 44 學分</span>
+                    </div>
+                    <div class="progress-bar-container">
+                        <div id="bar-dept-elective" class="progress-bar"></div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Right Column: Course List Table -->
+        <div>
+            <div class="card" style="min-height: 500px;">
+                <h2>已輸入課程清單</h2>
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>課程名稱</th>
+                                <th>課程性質</th>
+                                <th style="width: 80px; text-align: center;">學分</th>
+                                <th style="width: 80px; text-align: center;">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="courseTableBody">
+                            <!-- Dynamic Content -->
+                        </tbody>
+                    </table>
+                    <div id="emptyMessage" class="empty-message">
+                        目前尚未新增任何課程。
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Course Mapping Text
+    const typeMapping = {
+        'common_other': '共同必修 (非外語)',
+        'common_lang': '共同必修 (外語)',
+        'ge_classic': '通識 (經典與當代社會)',
+        'ge_life': '通識 (生命與社會關懷)',
+        'ge_history': '通識 (歷史文明與藝術)',
+        'ge_tech': '通識 (科學技術與社會)',
+        'college_req': '院必修',
+        'dept_req': '專業必修',
+        'dept_elective': '專業選修'
+    };
+
+    // Global Course State
+    let courses = [];
+
+    function addCourse() {
+        const nameInput = document.getElementById('courseName');
+        const creditsInput = document.getElementById('courseCredits');
+        const typeInput = document.getElementById('courseType');
+
+        const name = nameInput.value.trim();
+        const credits = parseInt(creditsInput.value);
+        const type = typeInput.value;
+
+        if (!name) {
+            alert('請輸入課程名稱！');
+            return;
+        }
+        if (isNaN(credits) || credits <= 0) {
+            alert('請輸入正確的學分數！');
+            return;
+        }
+
+        // Add to array
+        courses.push({ id: Date.now(), name, credits, type });
+
+        // Clear input form fields (except dropdown select)
+        nameInput.value = '';
+        creditsInput.value = '';
+
+        // Refresh UI
+        updateUI();
+    }
+
+    function deleteCourse(id) {
+        courses = courses.filter(course => course.id !== id);
+        updateUI();
+    }
+
+    function updateUI() {
+        const tbody = document.getElementById('courseTableBody');
+        const emptyMsg = document.getElementById('emptyMessage');
+        
+        // Clear Table
+        tbody.innerHTML = '';
+
+        if (courses.length === 0) {
+            emptyMsg.style.display = 'block';
+        } else {
+            emptyMsg.style.display = 'none';
+            courses.forEach(course => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>\${escapeHtml(course.name)}</td>
+                    <td>\${typeMapping[course.type]}</td>
+                    <td style="text-align: center;">\${course.credits}</td>
+                    <td style="text-align: center;">
+                        <button class="btn-delete" onclick="deleteCourse(\${course.id})">刪除</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // Calculate and update Progress Bars
+        calculateCredits();
+    }
+
+    function calculateCredits() {
+        // Initialize sums
+        let total = 0;
+        let common_other = 0;
+        let common_lang = 0;
+        let ge_classic = 0;
+        let ge_life = 0;
+        let ge_history = 0;
+        let ge_tech = 0;
+        let college = 0;
+        let dept_req = 0;
+        let dept_elective = 0;
+
+        // Sum up
+        courses.forEach(c => {
+            total += c.credits;
+            if (c.type === 'common_other') common_other += c.credits;
+            else if (c.type === 'common_lang') common_lang += c.credits;
+            else if (c.type === 'ge_classic') ge_classic += c.credits;
+            else if (c.type === 'ge_life') ge_life += c.credits;
+            else if (c.type === 'ge_history') ge_history += c.credits;
+            else if (c.type === 'ge_tech') ge_tech += c.credits;
+            else if (c.type === 'college_req') college += c.credits;
+            else if (c.type === 'dept_req') dept_req += c.credits;
+            else if (c.type === 'dept_elective') dept_elective += c.credits;
+        });
+
+        let common_total = common_other + common_lang;
+        let ge_total = ge_classic + ge_life + ge_history + ge_tech;
+
+        // Update Text & Bars
+        setProgressBar('total', total, 128, 'txt-total', 'bar-total');
+        setProgressBar('common', common_total, 12, 'txt-common', 'bar-common');
+        setProgressBar('common-lang', common_lang, 8, 'txt-common-lang', 'bar-common-lang');
+        setProgressBar('ge', ge_total, 16, 'txt-ge', 'bar-ge');
+        
+        setProgressBar('ge-classic', ge_classic, 4, 'txt-ge-classic', 'bar-ge-classic');
+        setProgressBar('ge-life', ge_life, 4, 'txt-ge-life', 'bar-ge-life');
+        setProgressBar('ge-history', ge_history, 4, 'txt-ge-history', 'bar-ge-history');
+        setProgressBar('ge-tech', ge_tech, 4, 'txt-ge-tech', 'bar-ge-tech');
+        
+        setProgressBar('college', college, 4, 'txt-college', 'bar-college');
+        setProgressBar('dept-req', dept_req, 52, 'txt-dept-req', 'bar-dept-req');
+        setProgressBar('dept-elective', dept_elective, 44, 'txt-dept-elective', 'bar-dept-elective');
+    }
+
+    function setProgressBar(key, current, target, textId, barId) {
+        const textElem = document.getElementById(textId);
+        const barElem = document.getElementById(barId);
+        
+        textElem.innerText = current + ' / ' + target + ' 學分';
+        
+        let percentage = (current / target) * 100;
+        if (percentage > 100) percentage = 100; // Cap visual bar at 100%
+        
+        barElem.style.width = percentage + '%';
+    }
+
+    function escapeHtml(str) {
+        return str.replace(/&/g, "&amp;")
+                  .replace(/</g, "&lt;")
+                  .replace(/>/g, "&gt;")
+                  .replace(/"/g, "&quot;")
+                  .replace(/'/g, "&#039;");
+    }
+</script>
+
+</body>
+</html>
