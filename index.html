@@ -223,9 +223,7 @@
     </header>
 
     <div class="grid">
-        <!-- Left Column: Input and Progress -->
         <div>
-            <!-- Course Input Card -->
             <div class="card">
                 <h2>新增課程資料</h2>
                 <div class="form-group">
@@ -253,11 +251,9 @@
                 <button type="button" id="addBtn" class="btn-primary" onclick="addCourse()">加入預審清單</button>
             </div>
 
-            <!-- Progress Card -->
             <div class="card">
                 <h2>學分達標進度條</h2>
                 
-                <!-- Total Credits -->
                 <div class="progress-wrapper">
                     <div class="progress-info">
                         <strong>累計總學分 (門檻: 128)</strong>
@@ -268,7 +264,6 @@
                     </div>
                 </div>
 
-                <!-- Common Required -->
                 <div class="progress-wrapper">
                     <div class="progress-info">
                         <span>共同必修 (門檻: 12)</span>
@@ -277,7 +272,6 @@
                     <div class="progress-bar-container">
                         <div id="bar-common" class="progress-bar"></div>
                     </div>
-                    <!-- Sub: Language -->
                     <div class="sub-progress">
                         <div class="progress-info" style="font-size: 12px;">
                             <span>其中外語課程 (門檻: 8)</span>
@@ -289,7 +283,6 @@
                     </div>
                 </div>
 
-                <!-- General Education -->
                 <div class="progress-wrapper">
                     <div class="progress-info">
                         <span>通識課程 (門檻: 16)</span>
@@ -299,7 +292,6 @@
                         <div id="bar-ge" class="progress-bar"></div>
                     </div>
                     
-                    <!-- 4 Subfields -->
                     <div class="sub-progress">
                         <div class="progress-info" style="font-size: 12px;">
                             <span>經典與當代社會 (門檻: 4)</span>
@@ -327,7 +319,6 @@
                     </div>
                 </div>
 
-                <!-- College Required -->
                 <div class="progress-wrapper">
                     <div class="progress-info">
                         <span>院必修 (門檻: 4)</span>
@@ -338,7 +329,6 @@
                     </div>
                 </div>
 
-                <!-- Department Required -->
                 <div class="progress-wrapper">
                     <div class="progress-info">
                         <span>專業必修 (門檻: 52)</span>
@@ -349,7 +339,6 @@
                     </div>
                 </div>
 
-                <!-- Department Elective -->
                 <div class="progress-wrapper">
                     <div class="progress-info">
                         <span>專業選修 (門檻: 44)</span>
@@ -363,7 +352,6 @@
             </div>
         </div>
 
-        <!-- Right Column: Course List Table -->
         <div>
             <div class="card" style="min-height: 500px;">
                 <h2>已輸入課程清單</h2>
@@ -378,8 +366,7 @@
                             </tr>
                         </thead>
                         <tbody id="courseTableBody">
-                            <!-- Dynamic Content -->
-                        </tbody>
+                            </tbody>
                     </table>
                     <div id="emptyMessage" class="empty-message">
                         目前尚未新增任何課程。
@@ -404,17 +391,30 @@
         'dept_elective': '專業選修'
     };
 
-    // Global Course State (讀取 LocalStorage 或預設空陣列)
-    let courses = JSON.parse(localStorage.getItem('graduation_courses')) || [];
+    // Global Course State (安全從 LocalStorage 讀取資料)
+    let courses = [];
+    try {
+        const storedCourses = localStorage.getItem('graduation_courses');
+        if (storedCourses) {
+            courses = JSON.parse(storedCourses);
+        }
+    } catch (e) {
+        console.error("無法自 localStorage 讀取資料", e);
+        courses = [];
+    }
 
-    // 網頁載入時立即更新畫面
-    window.onload = function() {
+    // 確保 DOM 完全載入後再進行第一次畫面更新
+    document.addEventListener('DOMContentLoaded', function() {
         updateUI();
-    };
+    });
 
     // 將資料儲存至瀏覽器本地端
     function saveCourses() {
-        localStorage.setItem('graduation_courses', JSON.stringify(courses));
+        try {
+            localStorage.setItem('graduation_courses', JSON.stringify(courses));
+        } catch (e) {
+            console.error("無法儲存資料至 localStorage", e);
+        }
     }
 
     function addCourse() {
@@ -428,11 +428,13 @@
 
         if (!name) {
             alert('請輸入課程名稱！');
+            nameInput.focus();
             return;
         }
-        // 將判斷條件改為小於 0，允許 0 學分
+        
         if (isNaN(credits) || credits < 0) {
             alert('請輸入正確的學分數 (0 或正整數)！');
+            creditsInput.focus();
             return;
         }
 
@@ -442,9 +444,12 @@
         // 儲存資料
         saveCourses();
 
-        // Clear input form fields (except dropdown select)
+        // Clear input form fields
         nameInput.value = '';
         creditsInput.value = '';
+        
+        // 自動聚焦回課程名稱輸入框，方便連續輸入
+        nameInput.focus();
 
         // Refresh UI
         updateUI();
@@ -463,6 +468,8 @@
         const tbody = document.getElementById('courseTableBody');
         const emptyMsg = document.getElementById('emptyMessage');
         
+        if (!tbody || !emptyMsg) return; // 防禦性機制，避免 DOM 尚未就緒
+
         // Clear Table
         tbody.innerHTML = '';
 
@@ -538,10 +545,12 @@
         const textElem = document.getElementById(textId);
         const barElem = document.getElementById(barId);
         
+        if (!textElem || !barElem) return; // 防禦性機制
+
         textElem.innerText = current + ' / ' + target + ' 學分';
         
         let percentage = (current / target) * 100;
-        if (percentage > 100) percentage = 100; // Cap visual bar at 100%
+        if (percentage > 100) percentage = 100; // 達到或超過門檻時，進度條視覺維持 100%
         
         barElem.style.width = percentage + '%';
     }
