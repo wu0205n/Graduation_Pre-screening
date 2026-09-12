@@ -248,6 +248,16 @@
                         <option value="dept_elective">專業選修</option>
                     </select>
                 </div>
+                <div class="form-group">
+                    <label for="courseSemester">修課學年度</label>
+                    <select id="courseSemester" class="form-control">
+                        <option value="114-2">114-2</option>
+                        <option value="115-1">115-1</option>
+                        <option value="115-2">115-2</option>
+                        <option value="116-1">116-1</option>
+                        <option value="116-2">116-2</option>
+                    </select>
+                </div>
                 <button type="button" id="addBtn" class="btn-primary" onclick="addCourse()">加入預審清單</button>
             </div>
 
@@ -361,12 +371,13 @@
                             <tr>
                                 <th>課程名稱</th>
                                 <th>課程性質</th>
-                                <th style="width: 80px; text-align: center;">學分</th>
-                                <th style="width: 80px; text-align: center;">操作</th>
+                                <th style="width: 90px; text-align: center;">學年度</th>
+                                <th style="width: 70px; text-align: center;">學分</th>
+                                <th style="width: 70px; text-align: center;">操作</th>
                             </tr>
                         </thead>
                         <tbody id="courseTableBody">
-                            </tbody>
+                        </tbody>
                     </table>
                     <div id="emptyMessage" class="empty-message">
                         目前尚未新增任何課程。
@@ -391,6 +402,28 @@
         'dept_elective': '專業選修'
     };
 
+    // 排序權重定義：課程性質優先順序
+    const typeOrder = {
+        'common_other': 1,
+        'common_lang': 2,
+        'ge_classic': 3,
+        'ge_life': 4,
+        'ge_history': 5,
+        'ge_tech': 6,
+        'college_req': 7,
+        'dept_req': 8,
+        'dept_elective': 9
+    };
+
+    // 排序權重定義：學年度優先順序
+    const semesterOrder = {
+        '114-2': 1,
+        '115-1': 2,
+        '115-2': 3,
+        '116-1': 4,
+        '116-2': 5
+    };
+
     // Global Course State (安全從 LocalStorage 讀取資料)
     let courses = [];
     try {
@@ -403,8 +436,29 @@
         courses = [];
     }
 
+    // 依「課程性質」再依「學年度」排序
+    function sortCourses() {
+        courses.sort((a, b) => {
+            const orderA = typeOrder[a.type] || 99;
+            const orderB = typeOrder[b.type] || 99;
+            if (orderA !== orderB) {
+                return orderA - orderB;
+            }
+
+            const semA = semesterOrder[a.semester] || 99;
+            const semB = semesterOrder[b.semester] || 99;
+            if (semA !== semB) {
+                return semA - semB;
+            }
+
+            return a.id - b.id;
+        });
+    }
+
     // 確保 DOM 完全載入後再進行第一次畫面更新
     document.addEventListener('DOMContentLoaded', function() {
+        sortCourses();
+        saveCourses();
         updateUI();
     });
 
@@ -421,10 +475,12 @@
         const nameInput = document.getElementById('courseName');
         const creditsInput = document.getElementById('courseCredits');
         const typeInput = document.getElementById('courseType');
+        const semesterInput = document.getElementById('courseSemester');
 
         const name = nameInput.value.trim();
         const credits = parseInt(creditsInput.value);
         const type = typeInput.value;
+        const semester = semesterInput.value;
 
         if (!name) {
             alert('請輸入課程名稱！');
@@ -439,9 +495,10 @@
         }
 
         // Add to array
-        courses.push({ id: Date.now(), name, credits, type });
+        courses.push({ id: Date.now(), name, credits, type, semester });
         
-        // 儲存資料
+        // 重新排序並儲存
+        sortCourses();
         saveCourses();
 
         // Clear input form fields
@@ -468,7 +525,7 @@
         const tbody = document.getElementById('courseTableBody');
         const emptyMsg = document.getElementById('emptyMessage');
         
-        if (!tbody || !emptyMsg) return; // 防禦性機制，避免 DOM 尚未就緒
+        if (!tbody || !emptyMsg) return;
 
         // Clear Table
         tbody.innerHTML = '';
@@ -481,7 +538,8 @@
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
                     <td>${escapeHtml(course.name)}</td>
-                    <td>${typeMapping[course.type]}</td>
+                    <td>${typeMapping[course.type] || course.type}</td>
+                    <td style="text-align: center;">${course.semester || '114-2'}</td>
                     <td style="text-align: center;">${course.credits}</td>
                     <td style="text-align: center;">
                         <button class="btn-delete" onclick="deleteCourse(${course.id})">刪除</button>
@@ -496,7 +554,6 @@
     }
 
     function calculateCredits() {
-        // Initialize sums
         let total = 0;
         let common_other = 0;
         let common_lang = 0;
@@ -508,7 +565,6 @@
         let dept_req = 0;
         let dept_elective = 0;
 
-        // Sum up
         courses.forEach(c => {
             total += c.credits;
             if (c.type === 'common_other') common_other += c.credits;
@@ -525,7 +581,6 @@
         let common_total = common_other + common_lang;
         let ge_total = ge_classic + ge_life + ge_history + ge_tech;
 
-        // Update Text & Bars
         setProgressBar('total', total, 128, 'txt-total', 'bar-total');
         setProgressBar('common', common_total, 12, 'txt-common', 'bar-common');
         setProgressBar('common-lang', common_lang, 8, 'txt-common-lang', 'bar-common-lang');
@@ -545,12 +600,12 @@
         const textElem = document.getElementById(textId);
         const barElem = document.getElementById(barId);
         
-        if (!textElem || !barElem) return; // 防禦性機制
+        if (!textElem || !barElem) return;
 
         textElem.innerText = current + ' / ' + target + ' 學分';
         
         let percentage = (current / target) * 100;
-        if (percentage > 100) percentage = 100; // 達到或超過門檻時，進度條視覺維持 100%
+        if (percentage > 100) percentage = 100;
         
         barElem.style.width = percentage + '%';
     }
