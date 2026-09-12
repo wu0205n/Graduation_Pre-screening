@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>畢業預審</title>
+    <!-- 引入 SheetJS 函式庫以支援前端匯出 .xlsx -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         :root {
             --bg-color: #121212;
@@ -75,12 +77,23 @@
             border: 1px solid var(--border-color);
         }
 
+        .card-header-flex {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
         .card h2 {
             font-size: 18px;
             color: var(--secondary);
             margin-bottom: 15px;
             border-left: 4px solid var(--secondary);
             padding-left: 10px;
+        }
+
+        .card-header-flex h2 {
+            margin-bottom: 0;
         }
 
         /* Form Controls */
@@ -126,6 +139,22 @@
 
         .btn-primary:hover {
             background-color: #d7b4ff;
+        }
+
+        .btn-export {
+            background-color: var(--secondary);
+            color: #121212;
+            border: none;
+            border-radius: 4px;
+            padding: 6px 12px;
+            font-size: 13px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .btn-export:hover {
+            background-color: #80eec0;
         }
 
         /* Progress Bars */
@@ -364,7 +393,10 @@
 
         <div>
             <div class="card" style="min-height: 500px;">
-                <h2>已輸入課程清單</h2>
+                <div class="card-header-flex">
+                    <h2>已輸入課程清單</h2>
+                    <button type="button" class="btn-export" onclick="exportToExcel()">匯出 Excel (.xlsx)</button>
+                </div>
                 <div class="table-responsive">
                     <table>
                         <thead>
@@ -389,7 +421,6 @@
 </div>
 
 <script>
-    // Course Mapping Text
     const typeMapping = {
         'common_other': '共同必修 (非外語)',
         'common_lang': '共同必修 (外語)',
@@ -402,7 +433,6 @@
         'dept_elective': '專業選修'
     };
 
-    // 排序權重定義：課程性質優先順序
     const typeOrder = {
         'common_other': 1,
         'common_lang': 2,
@@ -415,7 +445,6 @@
         'dept_elective': 9
     };
 
-    // 排序權重定義：學年度優先順序
     const semesterOrder = {
         '114-2': 1,
         '115-1': 2,
@@ -424,7 +453,6 @@
         '116-2': 5
     };
 
-    // Global Course State (安全從 LocalStorage 讀取資料)
     let courses = [];
     try {
         const storedCourses = localStorage.getItem('graduation_courses');
@@ -436,7 +464,6 @@
         courses = [];
     }
 
-    // 依「課程性質」再依「學年度」排序
     function sortCourses() {
         courses.sort((a, b) => {
             const orderA = typeOrder[a.type] || 99;
@@ -455,14 +482,12 @@
         });
     }
 
-    // 確保 DOM 完全載入後再進行第一次畫面更新
     document.addEventListener('DOMContentLoaded', function() {
         sortCourses();
         saveCourses();
         updateUI();
     });
 
-    // 將資料儲存至瀏覽器本地端
     function saveCourses() {
         try {
             localStorage.setItem('graduation_courses', JSON.stringify(courses));
@@ -494,30 +519,21 @@
             return;
         }
 
-        // Add to array
         courses.push({ id: Date.now(), name, credits, type, semester });
         
-        // 重新排序並儲存
         sortCourses();
         saveCourses();
 
-        // Clear input form fields
         nameInput.value = '';
         creditsInput.value = '';
-        
-        // 自動聚焦回課程名稱輸入框，方便連續輸入
         nameInput.focus();
 
-        // Refresh UI
         updateUI();
     }
 
     function deleteCourse(id) {
         courses = courses.filter(course => course.id !== id);
-        
-        // 更新儲存的資料
         saveCourses();
-        
         updateUI();
     }
 
@@ -527,7 +543,6 @@
         
         if (!tbody || !emptyMsg) return;
 
-        // Clear Table
         tbody.innerHTML = '';
 
         if (courses.length === 0) {
@@ -549,7 +564,6 @@
             });
         }
 
-        // Calculate and update Progress Bars
         calculateCredits();
     }
 
@@ -608,6 +622,38 @@
         if (percentage > 100) percentage = 100;
         
         barElem.style.width = percentage + '%';
+    }
+
+    // 匯出成 Excel (.xlsx) 函式
+    function exportToExcel() {
+        if (courses.length === 0) {
+            alert('目前尚無任何課程資料可供匯出！');
+            return;
+        }
+
+        // 整理匯出資料格式
+        const exportData = courses.map(course => ({
+            '課程名稱': course.name,
+            '課程性質': typeMapping[course.type] || course.type,
+            '修課學年度': course.semester || '114-2',
+            '學分數': course.credits
+        }));
+
+        // 建立 Sheet 與 Workbook
+        const worksheet = XLSX.utils.json_to_sheet(exportData);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, '畢業預審課程清單');
+
+        // 設定欄寬自適應視覺效果
+        worksheet['!cols'] = [
+            { wch: 28 }, // 課程名稱
+            { wch: 28 }, // 課程性質
+            { wch: 14 }, // 修課學年度
+            { wch: 10 }  // 學分數
+        ];
+
+        // 觸發下載 .xlsx 檔案
+        XLSX.writeFile(workbook, '健行資管_畢業學分預審清單.xlsx');
     }
 
     function escapeHtml(str) {
